@@ -139,7 +139,6 @@ public final class HeapDump
           new CharacterRule(EnglishCharacterData.UpperCase, 1),
           new CharacterRule(EnglishCharacterData.LowerCase, 1))));
     final NumberRangeRule numberRangeRule = new NumberRangeRule(100, 1000);
-    final RepeatCharactersRule repeatCharactersRule = new RepeatCharactersRule();
     final AllowedRegexRule allowedRegexRule = new AllowedRegexRule(".*");
     final IllegalRegexRule illegalRegexRule = new IllegalRegexRule("[\uffff]+");
 
@@ -160,7 +159,6 @@ public final class HeapDump
     rules.add(occurrencesRule);
     rules.add(lengthComplexityRule);
     rules.add(numberRangeRule);
-    rules.add(repeatCharactersRule);
     rules.add(allowedRegexRule);
     rules.add(illegalRegexRule);
     final DefaultPasswordValidator validator = new DefaultPasswordValidator(rules);
