@@ -22,14 +22,14 @@ public abstract class AbstractFileWordList extends AbstractWordList
   /** Default cache percent. */
   protected static final int DEFAULT_CACHE_PERCENT = 5;
 
-  /** Used to synchronize access to the underlying cache. */
-  private static final Object LOCK = new Object();
-
   /** File containing words. */
   protected final RandomAccessFile file;
 
   /** Number of words in the file. */
   protected int size;
+
+  /** Used to synchronize access to the underlying cache. */
+  private final Object lock = new Object();
 
   /** Cache of indexes to file positions. */
   private Cache cache;
@@ -99,7 +99,7 @@ public abstract class AbstractFileWordList extends AbstractWordList
    */
   public void close() throws IOException
   {
-    synchronized (LOCK) {
+    synchronized (lock) {
       file.close();
       cache = null;
     }
@@ -118,7 +118,7 @@ public abstract class AbstractFileWordList extends AbstractWordList
    */
   protected void initialize(final int cachePercent, final boolean allocateDirect) throws IOException
   {
-    synchronized (LOCK) {
+    synchronized (lock) {
       cache = new Cache(file.length(), cachePercent, allocateDirect);
       FileWord word;
       FileWord prev = null;
@@ -147,7 +147,7 @@ public abstract class AbstractFileWordList extends AbstractWordList
   protected String readWord(final int index) throws IOException
   {
     FileWord word;
-    synchronized (LOCK) {
+    synchronized (lock) {
       final Cache.Entry entry = cache.get(index);
       int i = entry.index;
       seek(entry.position);
