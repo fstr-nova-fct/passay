@@ -15,6 +15,7 @@ set -e
 HEAP_DUMP_FILE="heap/target/HeapDump.hprof"
 
 mvn -pl heap -Pheap -Dcheckstyle.skip -DskipTests -Dmaven.javadoc.skip=true clean package dependency:copy-dependencies
+CLASSPATH=$CLASSPATH:"heap/target/test-classes"
 for i in heap/target/*.jar; do
   CLASSPATH=$CLASSPATH:$i
 done

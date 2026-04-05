@@ -389,21 +389,6 @@
           </archive>
           <skipIfEmpty>true</skipIfEmpty>
         </configuration>
-        <executions>
-          <execution>
-            <id>test-jar</id>
-            <phase>package</phase>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-            <!-- modify the test jar final name not to include the project version
-                 this prevents the jar from being included by the bundle plugin
-                 but allows other modules to add a dependency on it -->
-            <configuration>
-              <finalName>${project.artifactId}</finalName>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.felix</groupId>
