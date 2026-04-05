@@ -120,14 +120,14 @@ git pull origin gh-pages
 # remove root directory javadocs
 git rm -r javadocs/org javadocs/*.html javadocs/*.css javadocs/*.js javadocs/package-list
 # add new javadocs to root directory
-cp distribution/target/${PROJECT}-${RELEASE_VERSION}-javadoc.jar javadocs
+cp distribution/target/${PROJECT}-distribution-${RELEASE_VERSION}-javadoc.jar javadocs
 pushd javadocs
 jar xf ${PROJECT}-distribution-${RELEASE_VERSION}-javadoc.jar
 rm -rf META-INF ${PROJECT}-distribution-${RELEASE_VERSION}-javadoc.jar
 popd
 # add new javadocs to release version directory
 mkdir javadocs/${RELEASE_VERSION}
-cp distribution/target/${PROJECT}-${RELEASE_VERSION}-javadoc.jar javadocs/${RELEASE_VERSION}
+cp distribution/target/${PROJECT}-distribution-${RELEASE_VERSION}-javadoc.jar javadocs/${RELEASE_VERSION}
 pushd javadocs/${RELEASE_VERSION}
 jar xf ${PROJECT}-distribution-${RELEASE_VERSION}-javadoc.jar
 rm -rf META-INF ${PROJECT}-distribution-${RELEASE_VERSION}-javadoc.jar
@@ -141,7 +141,7 @@ echo "Adding release binaries"
 user_continue
 
 mkdir downloads/${RELEASE_VERSION}
-cp distribution/target/*-dist* downloads/${RELEASE_VERSION}
+cp distribution/target/passay-${RELEASE_VERSION}-dist* downloads/${RELEASE_VERSION}
 git add downloads/${RELEASE_VERSION}
 git commit -a -m "Added binaries for ${RELEASE_VERSION} release."
 echo "Committed new release binaries"
