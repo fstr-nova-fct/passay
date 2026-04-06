@@ -2,7 +2,15 @@
 layout: default
 title: Password policy enforcement for Java
 ---
+
+## Features
 Passay provides a comprehensive and extensible feature set for password validation and generation.
+* Common set of rules for password validation
+* Generation of passwords that meet a configured rule set
+* Customized messaging
+* Support for internationalization
+* Support for unicode characters in passwords
+* Thread safe components
 
 ## Password validation
 Enforce password policy by validating candidate passwords against a configurable rule set.
@@ -13,7 +21,7 @@ Passay provides a comprehensive set of rules for common cases and supports exten
 Generate passwords using a configurable rule set. The [password generator](javadocs/org/passay/generate/PasswordGenerator.html)
 is extensible like all Passay components.
 
-# Using
+## Using
 Passay artifacts are available in Maven Central. If you would like to use this project in your maven build,
 include the following in your pom.xml:
 
