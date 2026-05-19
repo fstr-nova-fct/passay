@@ -1,0 +1,100 @@
+Function: org.passay.rule.LengthRule#validate
+Code:core/src/main/java/org/passay/rule/LengthRule.java
+JUnit:core/src/test/java/org/passay/rule/LengthRuleBlackBoxTest.java
+
+Logic (3 branches): length < min → TOO_SHORT | length > max → TOO_LONG | else OK
+Length: codePointCount() (ASCII tests: 1 char = 1 code point)
+min=8, max=16 fixed for WEC and Simple BVA; Strong EC also varies min/max
+
+EQUIVALENCE CLASSES
+length (min=8, max=16):
+  | Class | Condition       | Result     |
+  | EC1   | length < 8      | TOO_SHORT  |
+  | EC2   | 8 ≤ length ≤ 16 | valid      |
+  | EC3   | length > 16     | TOO_LONG   |
+
+minimumLength (Strong EC):
+  | Class | Condition | Note                                       
+  | ECa   | min ≤ 0   | TOO_SHORT impossible (length ≥ 0 always)   
+  | ECb   | min > 0   | typical policy behaviour                   
+
+maximumLength vs min (Strong EC):
+  | Class | Condition | Note                             
+  | ECx   | max < min | empty interval — EC2 infeasible
+  | ECy   | max ≥ min | consistent interval               
+
+
+WEAK EQUIVALENCE CLASS (WEC) —> 3 tests
+  Rule: 1 test per class of the dominant variable (length) → 3 tests
+  | ID   | Password                    | len | Expected  | Class |
+  | WEC1 | "abc"                       |  3  | TOO_SHORT | EC1   |
+  | WEC2 | "validpass"                 |  9  | valid     | EC2   |
+  | WEC3 | "thispasswordiswaytoolong"  | 24  | TOO_LONG  | EC3   |
+
+  Takeaway: with fixed min/max, one representative per partition (short / valid /
+  long) is enough to cover the three observable branches.
+
+
+STRONG EQUIVALENCE CLASS (SEC) —> 12 combinations 
+Rule:3×2×2 = 12
+EC1/2/3 = length | ECa/b = min | ECx/y = max vs min relation
+OK = valid | SHORT/LONG = errors | — = infeasible
+
+  | ID    | Cl. length | Cl. min    | Cl. max    | len | min | max | Result | Note (summary)                        |
+  |-------|------------|------------|------------|-----|-----|-----|--------|---------------------------------------|
+  | SEC1  | EC1 short  | ECa min≤0  | ECx max<min|  —  |  0  | -1  | —      | EC1+ECa → length < 0 -impossible      |
+  | SEC2  | EC1 short  | ECa min≤0  | ECy max≥min|  —  |  0  | 16  | —      | EC1 with min=0 -impossible            |
+  | SEC3  | EC1 short  | ECb min>0  | ECx max<min|  5  | 10  |  5  | SHORT  | 5 < min (10)                          |
+  | SEC4  | EC1 short  | ECb min>0  | ECy max≥min|  5  |  8  | 16  | SHORT  | 5 < min (8)                           |
+  | SEC5  | EC2 valid  | ECa min≤0  | ECx max<min|  —  |  0  | -1  | —      | no length between 0 and -1- impossible|
+  | SEC6  | EC2 valid  | ECa min≤0  | ECy max≥min|  5  |  0  | 16  | OK     | 0 ≤ 5 ≤ 16                            |
+  | SEC7  | EC2 valid  | ECb min>0  | ECx max<min|  —  |  8  |  5  | —      | max < min  - impossible               |
+  | SEC8  | EC2 valid  | ECb min>0  | ECy max≥min| 10  |  8  | 16  | OK     | nominal case                          |
+  | SEC9  | EC3 long   | ECa min≤0  | ECx max<min| 20  |  0  | -1  | LONG   | 20 > max (-1)                         |
+  | SEC10 | EC3 long   | ECa min≤0  | ECy max≥min| 20  |  0  | 16  | LONG   | 20 > max (16)                         |
+  | SEC11 | EC3 long   | ECb min>0  | ECx max<min| 20  | 10  |  5  | LONG   | 20 > max (5)                          |
+  | SEC12 | EC3 long   | ECb min>0  | ECy max≥min| 20  |  8  | 16  | LONG   | 20 > max (16)                         |
+Total: 8 testable and 4 infeasible (SEC1, SEC2, SEC5, SEC7)
+
+Takeaway: Strong EC combines classes across variables; some combinations are logically impossible (e.g. short password with min≤0). Passay does not reject
+odd config — it only applies the two comparisons.
+
+
+BOUNDARY VALUE ANALYSIS (BVA) — min=8, max=16
+Test count per technique (1 variable: length):
+  | Technique         | Tests | JUnit |
+  | Simple BVA        |   6   |  Yes  |
+  | Robust BVA        |   8   |  No   |
+  | Worst-Case BVA    |   5   |  No   |
+  | Robust Worst-Case |   7   |  No   |
+Boundaries: lower 7,8,9 | upper 15,16,17
+
+SIMPLE BVA:
+  | ID    | length | Expected  |
+  | SBVA1 |   7    | TOO_SHORT |
+  | SBVA2 |   8    | valid     |
+  | SBVA3 |   9    | valid     |
+  | SBVA4 |  15    | valid     |
+  | SBVA5 |  16    | valid     |
+  | SBVA6 |  17    | TOO_LONG  |
+Takeaway: BVA targets boundary neighbourhoods (off-by-one). Simple BVA covers min−1, min, min+1 and max−1, max, max+1.
+
+Robust BVA (+ extremes 1 and 100): 8 tests
+Worst-Case (min−1=7, min=8, nominal=12, max=16, max+1=17): 5 tests
+Robust Worst-Case (1,7,8,12,16,17,100): 7 tests
+
+Simple summary
+  | Technique         | Tests | JUnit |
+  | Weak EC           |   3   |  Yes  |
+  | Strong EC         |  12   |  No   |
+  | Simple BVA        |   6   |  Yes  |
+  | Robust BVA        |   8   |  No   |
+  | Worst-Case BVA    |   5   |  No   |
+  | Robust Worst-Case |   7   |  No   |
+
+Total JUnit executed: 9 (WEC1–3 + SBVA1–6)
+
+Run:
+mvn test "-Dtest=LengthRuleBlackBoxTest" "-Dcheckstyle.skip=true"
+
+
