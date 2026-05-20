@@ -61,7 +61,7 @@ odd config — it only applies the two comparisons.
 
 
 BOUNDARY VALUE ANALYSIS (BVA) — min=8, max=16
-Test count per technique (1 variable: length):
+Test count per technique:
   | Technique         | Tests | JUnit |
   | Simple BVA        |   6   |  Yes  |
   | Robust BVA        |   8   |  No   |
@@ -96,5 +96,3 @@ Total JUnit executed: 9 (WEC1–3 + SBVA1–6)
 
 Run:
 mvn test "-Dtest=LengthRuleBlackBoxTest" "-Dcheckstyle.skip=true"
-
-

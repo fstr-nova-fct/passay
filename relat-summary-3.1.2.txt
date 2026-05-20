@@ -1,1 +1,54 @@
-nothing yet
+Function: org.passay.rule.UsernameRule#validate
+Code:core/src/main/java/org/passay/rule/UsernameRule.java
+JUnit: core/src/test/java/org/passay/rule/UsernameRulePairwiseTest.java
+
+Why UsernameRule
+ LengthRule (3.1.1) is mostly one numeric input. Pairwise fits rules with severalconfiguration flags that interact. UsernameRule checks if the password matches the
+username (forward) and optionally the reversed username when matchBackwards=true. ~
+Username in all tests: "admin" (Passay builds reversed as "nimda" via user.reverse()).
+
+
+Configuration factors
+  | F1 matchBackwards | true, false |
+  | F2 ignoreCase     | true, false |
+  | F3 matchBehavior  | StartsWith, EndsWith, Contains |
+
+  Exhaustive on config only: 2×2×3 = 12 combinations
+  Pairwise on config: 9 tests (covers all 16 pairs of levels between F1, F2, F3)
+
+Test input (not a 4th factor)
+  Each row picks a password on purpose to exercise:
+    forward  — substring "admin" in the sense required by F3
+    reversed — substring "nimda" (admin reversed), relevant when F1=true
+    neither  — no "admin" / "nimda" match for the active checks
+
+  The 36 number in the Java comment is 2×2×3×3 if you also cross config with those
+  three password goals; we use 9 config rows and choose passwords per row.
+
+
+Pairwise battery
+  | ID  | F1 | F2 | F3         | Password goal | Password       | Result |
+  | PW1 | T  | T  | StartsWith | forward       | adminSecure123 | fail   |
+  | PW2 | T  | F  | EndsWith   | reversed      | Securenimda    | fail   |
+  | PW3 | F  | T  | EndsWith   | neither       | MyStr0ngPwd!   | pass   |
+  | PW4 | F  | F  | Contains   | forward       | theadminpwd    | fail   |
+  | PW5 | T  | T  | Contains   | reversed      | xyznimdaQRS    | fail   |
+  | PW6 | T  | F  | StartsWith | neither       | Str0ngP@sswd   | pass   |
+  | PW7 | F  | T  | StartsWith | reversed*     | nimdaSecure    | pass   |
+  | PW8 | T  | T  | EndsWith   | forward       | Secureadmin    | fail   |
+  | PW9 | T  | T  | Contains   | neither       | Str0ngP@ss!    | pass   |
+
+Config pair coverage (16 pairs, all in the 9 tests)
+  F1×F2: (T,T) PW1,PW5,PW8,PW9 | (T,F) PW2,PW6 | (F,T) PW3,PW7 | (F,F) PW4
+
+  F1×F3: (T,StartsWith) PW1,PW6 | (T,EndsWith) PW2,PW8 | (T,Contains) PW5,PW9 | (F,StartsWith) PW7 | (F,EndsWith) PW3 | (F,Contains) PW4
+
+  F2×F3: (T,StartsWith) PW1 | (T,EndsWith) PW3,PW8 | (T,Contains) PW5,PW9 | (F,StartsWith) PW6 | (F,EndsWith) PW2 | (F,Contains) PW4
+
+  Password goals across tests: forward PW1,PW4,PW8 | reversed PW2,PW5 | neither PW3,PW6,PW9
+  (PW7 uses reversed text but expects pass — tests F1=false, not F4 as a factor.)
+
+
+Run: mvn test "-Dtest=UsernameRulePairwiseTest" "-Dcheckstyle.skip=true"
+
+-> 3 config factors | 9 JUnit tests | 16/16 config pairs covered | BUILD SUCCESS
