@@ -3,9 +3,9 @@ Code:core/src/main/java/org/passay/rule/UsernameRule.java
 JUnit: core/src/test/java/org/passay/rule/UsernameRulePairwiseTest.java
 
 Why UsernameRule
- LengthRule (3.1.1) is mostly one numeric input. Pairwise fits rules with severalconfiguration flags that interact. UsernameRule checks if the password matches the
-username (forward) and optionally the reversed username when matchBackwards=true. ~
-Username in all tests: "admin" (Passay builds reversed as "nimda" via user.reverse()).
+LengthRule (3.1.1) is mostly one numeric input. Pairwise fits rules with severalconfiguration flags that interact. UsernameRule checks if the password matches the
+username (forward) and optionally the reversed username when matchBackwards=true
+Username in all tests: "admin" (Passay builds reversed as "nimda" via user.reverse())
 
 
 Configuration factors
@@ -13,17 +13,16 @@ Configuration factors
   | F2 ignoreCase     | true, false |
   | F3 matchBehavior  | StartsWith, EndsWith, Contains |
 
-  Exhaustive on config only: 2×2×3 = 12 combinations
-  Pairwise on config: 9 tests (covers all 16 pairs of levels between F1, F2, F3)
+Exhaustive on config only: 2×2×3 = 12 combinations
+Pairwise on config: 9 tests (covers all 16 pairs of levels between F1, F2, F3)
 
 Test input (not a 4th factor)
-  Each row picks a password on purpose to exercise:
-    forward  — substring "admin" in the sense required by F3
-    reversed — substring "nimda" (admin reversed), relevant when F1=true
-    neither  — no "admin" / "nimda" match for the active checks
+Each row picks a password on purpose to exercise:
+  forward  — substring "admin" in the sense required by F3
+  reversed — substring "nimda" (admin reversed), relevant when F1=true
+  neither  — no "admin" / "nimda" match for the active checks
 
-  The 36 number in the Java comment is 2×2×3×3 if you also cross config with those
-  three password goals; we use 9 config rows and choose passwords per row.
+The 36 number in the Java comment is 2×2×3×3 if you also cross config with those three password goals -> we use 9 config rows and choose passwords per row
 
 
 Pairwise battery
@@ -46,7 +45,7 @@ Config pair coverage (16 pairs, all in the 9 tests)
   F2×F3: (T,StartsWith) PW1 | (T,EndsWith) PW3,PW8 | (T,Contains) PW5,PW9 | (F,StartsWith) PW6 | (F,EndsWith) PW2 | (F,Contains) PW4
 
   Password goals across tests: forward PW1,PW4,PW8 | reversed PW2,PW5 | neither PW3,PW6,PW9
-  (PW7 uses reversed text but expects pass — tests F1=false, not F4 as a factor.)
+  (PW7 uses reversed text but expects pass — tests F1=false, not F4 as a factor)
 
 
 Run: mvn test "-Dtest=UsernameRulePairwiseTest" "-Dcheckstyle.skip=true"

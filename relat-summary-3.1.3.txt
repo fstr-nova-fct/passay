@@ -1,0 +1,66 @@
+Function: org.passay.rule.CharacterCharacteristicsRule#validate
+Code:  core/src/main/java/org/passay/rule/CharacterCharacteristicsRule.java
+JUnit: core/src/test/java/org/passay/rule/CharacterCharacteristicsRuleCauseEffectTest.java
+
+Why CharacterCharacteristicsRule
+Needs at least N of M character-type rules to pass (here N=2, M=3)
+Each sub-rule is a clear yes/no cause (uppercase, digit, and special)
+The final pass/fail depends on how many causes are true —> good for cause-effect graph and a full decision table (2^3=8)
+
+Specification:
+Rule: CharacterCharacteristicsRule(2, upper, digit, specialAscii) — at least 2 of 3 (N=2, M=3)
+->C1: password has ≥1 uppercase (CharacterRule UpperCase)
+->C2: password has ≥1 digit (CharacterRule Digit)
+->C3: password has ≥1 special ASCII (CharacterRule SpecialAscii)
+  (SpecialAscii not Special: ASCII passwords only; Passay's default test uses Special = wider charset)
+
+Cause-effect graph
+Causes: C1, C2, C3 (each sub-rule validates)
+Intermediate: successCount = number of causes C1, C2, C3 that are true
+Condition: password valid when successCount ≥ 2 (numCharacteristics = 2 in code)
+
+Effects:
+E1 — password accepted (SuccessRuleResult)
+E2 — password rejected (INSUFFICIENT_CHARACTERISTICS)
+
+Links:
+each of C1, C2, C3 true → adds 1 to successCount
+successCount ≥ 2 → E1
+successCount < 2 → E2
+(C1/C2/C3 do not link to E1/E2 directly — only through the count)
+
+Decision table (8 rules)
+We did not mark any column as "indifferent" because:
+- N=2 and M=3 → count can be 0, 1, 2, or 3 (each row is different)
+- rows with count=1 (DT2, DT3, DT5) fail for different reasons — all worth testing
+
+  Table legend: X = this outcome happens | — = does not apply
+
+  | Rule | C1 upper | C2 digit | C3 special | count | pass (E1) | fail (E2) |
+  |------|----------|----------|------------|-------|-----------|-----------|
+  | DT1  | F        | F        | F          | 0     | —         | X         |
+  | DT2  | F        | F        | T          | 1     | —         | X         |
+  | DT3  | F        | T        | F          | 1     | —         | X         |
+  | DT4  | F        | T        | T          | 2     | X         | —         |
+  | DT5  | T        | F        | F          | 1     | —         | X         |
+  | DT6  | T        | F        | T          | 2     | X         | —         |
+  | DT7  | T        | T        | F          | 2     | X         | —         |
+  | DT8  | T        | T        | T          | 3     | X         | —         |
+
+count = how many of C1,C2,C3 are true (max 3 = M)
+Fail if count is 0 or 1 (< N)
+Pass if count is 2 or 3 (≥ N)
+
+Test cases
+  | ID  | C1 | C2 | C3 | Password  | Expected |
+  | DT1 | F  | F  | F  | abcdef    | fail     |
+  | DT2 | F  | F  | T  | abcdef!   | fail     |
+  | DT3 | F  | T  | F  | abcdef1   | fail     |
+  | DT4 | F  | T  | T  | abcde1!   | pass     |
+  | DT5 | T  | F  | F  | Abcdef    | fail     |
+  | DT6 | T  | F  | T  | Abcdef!   | pass     |
+  | DT7 | T  | T  | F  | Abcdef1   | pass     |
+  | DT8 | T  | T  | T  | Abcde1!   | pass     |
+
+Run: mvn test "-Dtest=CharacterCharacteristicsRuleCauseEffectTest" "-Dcheckstyle.skip=true"
+-> 3 causes | 8 decision-table rows | 8 JUnit tests | BUILD SUCCESS

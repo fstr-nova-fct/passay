@@ -1,0 +1,62 @@
+Function: org.passay.rule.NumberRangeRule#validate
+Code:  core/src/main/java/org/passay/rule/NumberRangeRule.java
+JUnit: core/src/test/java/org/passay/rule/NumberRangeRuleCategoryPartitionTest.java
+TSL:  core/src/test/resources/NumberRangeRule.tsl
+
+Why NumberRangeRule:
+Password must not contain a number in [lower, upper) — here [10, 20)
+Rule also depends on how the number appears (Contains / StartsWith / EndsWith) and whether to report all matches or only the first
+
+Specification:
+NumberRangeRule(10, 20, matchBehavior, reportAllFailures)
+Range [10, 20): lower inclusive, upper exclusive 
+Fail → ILLEGAL_NUMBER_RANGE when a forbidden number matches with the given behavior
+
+Category partition
+  | Category |          Choices |
+  | Forbidden number |  none, below(9), above(20), in-range 10/15/19, multiple(12+17) |
+  | Digit position |    start, middle, end |
+  | Match behavior |    Contains, StartsWith, EndsWith |
+  | Failure reporting | report all, report first only |
+
+Rationale:
+They map to real rule inputs: which integer is present, where it sits in the password, MatchBehavior on the rule, and reportAllFailures 
+TSL expands combinations; constraints remove useless ones
+
+TSL constraints (NumberRangeRule.tsl):
+->ends with only for in-range 10, 15, or 19 — else Contains / StartsWith only
+->report first only when multiple (12+17); report all for all other number types
+
+Full cross-product before constraints: 7×3×3×2 = 126
+After constraints (verified by enumeration): 51 test frames
+
+Breakdown of 51 frames:
+->none, below, above: 3 types × 6 each (3 positions × 2 behaviors, no EndsWith) = 18
+->in-range 10, 15, 19: 3 types × 9 each (3×3, report all only) = 27
+->multiple: 3 positions × 2 behaviors (Contains, StartsWith) × 1 reporting (report first) = 6
+
+Implemented sample (15 JUnit tests)
+  | TF   | number      | position | behavior   | reportAll | Password    | Expected |
+  | TF1  | none        | —        | Contains   | true      | abcdefgh    | pass     |
+  | TF2  | in_range 10 | start    | Contains   | true      | 10abcdef    | fail     |
+  | TF4  | in_range 10 | start    | StartsWith | true      | 10abcdef    | fail     |
+  | TF5  | in_range 10 | start    | EndsWith   | true      | 10abcdef    | pass     |
+  | TF6  | in_range 10 | middle   | Contains   | true      | abc10def    | fail     |
+  | TF13 | in_range 10 | end      | EndsWith   | true      | abcdef10    | fail     |
+  | TF22 | in_range 19 | end      | Contains   | true      | abcdef19    | fail     |
+  | TF28 | in_range 15 | start    | StartsWith | true      | 15abcdef    | fail     |
+  | TF30 | in_range 15 | middle   | Contains   | true      | abc15def    | fail     |
+  | TF32 | in_range 15 | middle   | StartsWith | true      | abc15def    | pass     |
+  | TF37 | in_range 15 | end      | EndsWith   | true      | abcdef15    | fail     |
+  | TF38 | below (9)   | middle   | Contains   | true      | abc9defg    | pass     |
+  | TF39 | above (20)  | middle   | Contains   | true      | abc20def    | pass     |
+  | TF40 | multiple    | mixed    | Contains   | true      | 12abc17d    | fail (2 details) |
+  | TF41 | multiple    | mixed    | Contains   | false     | 12abc17d    | fail (1 detail) |
+
+->TF3 omitted (same idea as TF5: number at start but EndsWith → pass) Table uses 15 of 51 frames
+->TF5, TF32: digit in password but wrong MatchBehavior for that position → pass
+->TF40: extra JUnit case (reportAll=true) to show 2 failures
+->TF41 matches TSL (report first only)
+
+Run: mvn test "-Dtest=NumberRangeRuleCategoryPartitionTest" "-Dcheckstyle.skip=true"
+-> 4 categories | 51 TSL frames | 15 JUnit tests | BUILD SUCCESS

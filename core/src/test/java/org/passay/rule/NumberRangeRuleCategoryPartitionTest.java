@@ -9,9 +9,10 @@ import org.passay.RuleResult;
 /**
  * Black-box tests for {@link NumberRangeRule#validate(org.passay.PasswordData)}.
  *
- * <p>Implements test battery from category partition testing using TSL
- * (section 3.1.4). Configuration: lowerRange = 10, upperRange = 20.
- * 51 test frames generated, 15 representative test cases implemented.</p>
+ * <p>Implements a sample of the category-partition battery from TSL
+ * (section 3.1.4). Specification: {@code core/src/test/resources/NumberRangeRule.tsl}
+ * (51 frames). Configuration: lowerRange = 10, upperRange = 20.
+ * 15 representative frames implemented in JUnit.</p>
  */
 public class NumberRangeRuleCategoryPartitionTest {
 
@@ -133,8 +134,8 @@ public class NumberRangeRuleCategoryPartitionTest {
         RuleResult result = rule.validate(pd);
         assertFalse(result.isValid(),
                 "TF-40: multiple numbers from range, Contains, reportAll -> should fail");
-        assertTrue(result.getDetails().size() >= 2,
-                "TF-40: reportAll=true should report multiple failures");
+        assertEquals(2, result.getDetails().size(),
+                "TF-40: reportAll=true should report exactly two failures (12 and 17)");
     }
 
     /** TF-41 — multiple numbers (12, 17), Contains, reportAll=false. */

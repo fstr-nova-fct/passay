@@ -1,0 +1,45 @@
+#
+# Category-partition test specification for NumberRangeRule.validate
+# Passay project — section 3.1.4 (TSLGenerator)
+#
+# Configuration under test:
+#   NumberRangeRule(10, 20, matchBehavior, reportAllFailures)
+#   Forbidden integers: 10 .. 19 (lower inclusive, upper exclusive)
+#
+# Generate test frames:
+#   TSLGenerator NumberRangeRule.tsl   (or: tslgenerator NumberRangeRule.tsl)
+# Expected: 51 test frames (TF-1 .. TF-51)
+#
+# JUnit sample: NumberRangeRuleCategoryPartitionTest.java (15 representative frames)
+#
+
+Parameters:
+Forbidden number in password:
+  no digit from 10..19. [property NoHit]
+  digit 9 below range. [property Below]
+  digit 20 at or above upper bound. [property Above]
+  digit 10 in range. [property In10]
+  digit 15 in range. [property In15]
+  digit 19 in range. [property In19]
+  digits 12 and 17 both in range. [property Multi]
+
+Digit position in password:
+  number at start.
+  number in middle.
+  number at end.
+
+Match behavior:
+  contains
+  starts with
+  ends with
+
+Failure reporting:
+  report all matching numbers. [property RptAll]
+  report first matching number only. [property RptFirst]
+
+# EndsWith only applies when testing in-range single digits 10, 15, 19
+ends with. [if In10 or In15 or In19]
+
+# reportAll vs reportFirst: only meaningful when two in-range digits appear
+report first matching number only. [if Multi]
+report all matching numbers. [if !Multi]
