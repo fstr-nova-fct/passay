@@ -1,0 +1,73 @@
+Function: org.passay.rule.RepeatCharactersRule#validate
+Code:  core/src/main/java/org/passay/rule/RepeatCharactersRule.java
+JUnit: core/src/test/java/org/passay/rule/RepeatCharactersRuleControlFlowTest.java
+
+Why RepeatCharactersRule:
+Checks if a password contains too many sequences of repeating characters.
+The validate() method has a while loop with nested if/else branches — good structure
+for control flow analysis with multiple decisions and a back edge.
+
+Configuration: RepeatCharactersRule(sequenceLength, sequenceCount)
+sequenceLength = minimum consecutive identical chars to count as a sequence
+sequenceCount = how many sequences trigger failure
+Example: (2, 2) → "aabbc" fails (2 sequences of 2+ repeats: "aa", "bb")
+
+Control Flow Graph (14 nodes, 17 edges)
+  | Node | Statement                                      | Line(s) |
+  | N1   | assertNotNull, matches, codePoints, password    | 84-90   |
+  | N2   | max, count=0, repeat=1, prev=-1, i=0            | 92-96   |
+  | N3   | while (i <= max)              [DECISION D1]     | 97      |
+  | N4   | curr = codePointAt(i)                           | 98      |
+  | N5   | if (curr == prev)             [DECISION D2]     | 99      |
+  | N6   | repeat++                                        | 100     |
+  | N7   | if (repeat >= sequenceLength) [DECISION D3]     | 102     |
+  | N8   | match = substring, matches.add, count++          | 103-105 |
+  | N9   | repeat = 1                                      | 107     |
+  | N10  | prev = curr; i++                                | 109-110 |
+  | N11  | if (count >= sequenceCount)   [DECISION D4]     | 112     |
+  | N12  | return FailureRuleResult                        | 113     |
+  | N13  | return SuccessRuleResult                        | 115     |
+  | N14  | password.clear() (finally)                      | 117     |
+
+Edges: N1→N2, N2→N3, N3→N4(D1:T), N3→N11(D1:F), N4→N5, N5→N6(D2:T),
+       N5→N7(D2:F), N6→N10, N7→N8(D3:T), N7→N9(D3:F), N8→N9, N9→N10,
+       N10→N3(back), N11→N12(D4:T), N11→N13(D4:F), N12→N14, N13→N14
+
+Cyclomatic complexity: V(G) = 17 - 14 + 2 = 5
+
+Decisions:
+  | ID | Condition               | True branch      | False branch      |
+  | D1 | i <= max                | N4 (enter loop)  | N11 (exit loop)   |
+  | D2 | curr == prev            | N6 (repeat++)    | N7 (check seq)    |
+  | D3 | repeat >= sequenceLength| N8 (record match)| N9 (reset repeat) |
+  | D4 | count >= sequenceCount  | N12 (FAIL)       | N13 (SUCCESS)     |
+
+1. Statement Coverage (2 tests)
+  | ID  | Password | seqLen | seqCnt | Nodes Covered                      | Result |
+  | SC1 | abcdef   | 2      | 1      | N1-N5, N7, N9, N10, N11, N13, N14  | pass   |
+  | SC2 | aabbc    | 2      | 2      | N6, N8, N12 (+ all above)          | fail   |
+
+2. Decision Coverage (2 tests — same as statement)
+  | ID  | Password | seqLen | seqCnt | Decisions                     | Result |
+  | DC1 | abcdef   | 2      | 1      | D1:T/F, D2:F, D3:F, D4:F     | pass   |
+  | DC2 | aabbc    | 2      | 2      | D1:T/F, D2:T, D3:T, D4:T     | fail   |
+
+3. Condition Coverage (2 tests — same as decision)
+  Single atomic condition per decision → condition = decision coverage.
+
+4. MC/DC Coverage (3 tests)
+  | ID   | Password | seqLen | seqCnt | Coverage                       | Result |
+  | MC1  | abcdef   | 2      | 1      | D2:F, D3:F, D4:F              | pass   |
+  | MC2  | aabbc    | 2      | 2      | D2:T, D3:T, D4:T              | fail   |
+  | MC3  | aab      | 2      | 2      | D2:T, D3:T, D4:F (flips D4)   | pass   |
+
+5. Independent Path Coverage (V(G) = 5 paths)
+  | Path | Password | seqLen | seqCnt | Key path                          | Result |
+  | P1   | (empty)  | 2      | 1      | baseline: sentinel only            | pass   |
+  | P2   | ab       | 2      | 1      | all different, D2 always F         | pass   |
+  | P3   | aa       | 3      | 1      | flips D2: repeat++ but < seqLen    | pass   |
+  | P4   | aab      | 2      | 2      | flips D3: match recorded           | pass   |
+  | P5   | aab      | 2      | 1      | flips D4: count >= seqCount        | fail   |
+
+Run: mvn test "-Dtest=RepeatCharactersRuleControlFlowTest" "-Dcheckstyle.skip=true"
+-> 4 decisions | V(G)=5 | 12 JUnit tests (5 batteries) | BUILD SUCCESS

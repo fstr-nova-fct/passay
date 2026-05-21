@@ -1,0 +1,88 @@
+Function: org.passay.rule.CharacterOccurrencesRule#validate
+Code:  core/src/main/java/org/passay/rule/CharacterOccurrencesRule.java
+JUnit: core/src/test/java/org/passay/rule/CharacterOccurrencesRuleDataFlowTest.java
+
+Why CharacterOccurrencesRule:
+Checks if any character appears more than maxOccurrences times in the password.
+The validate() method sorts the characters, then iterates counting consecutive
+identical chars. Has clear def-use patterns with multiple variables redefined
+inside a loop — good fit for data flow analysis.
+
+Configuration: CharacterOccurrencesRule(maxAllowedOccurrences)
+maxOccurrences = maximum times any single character may appear
+Example: maxOcc=2 → "aaabcd" fails ("a" appears 3 times > 2)
+
+Note: password chars are sorted before counting (Arrays.sort), so character
+positions in the original password do not matter.
+
+Numbered statements (S1-S16):
+  | Stmt | Code                                        | Line | Def           | Use                    |
+  | S1   | assertNotNull(passwordData)                 | 57   | -             | -                      |
+  | S2   | details = new ArrayList<>()                 | 58   | details       | -                      |
+  | S3   | password = getPassword()                    | 59   | password      | -                      |
+  | S4   | codePoints = ...toArray()                   | 60   | codePoints    | password               |
+  | S5   | Arrays.sort(codePoints)                     | 61   | codePoints    | codePoints             |
+  | S6   | repeat = 1                                  | 63   | repeat        | -                      |
+  | S7   | i = 1 (for-init)                            | 64   | i             | -                      |
+  | S8   | i < codePoints.length (for-cond) [D1]       | 64   | -             | i, codePoints          |
+  | S9   | codePoints[i] == codePoints[i-1] [D2]       | 65   | -             | codePoints, i          |
+  | S10  | repeat++                                    | 66   | repeat        | repeat                 |
+  | S11  | repeat > maxOccurrences [D3]                | 68   | -             | repeat                 |
+  | S12  | details.add(...codePoints[i-1], repeat)      | 69-72| -             | details, codePoints, i, repeat |
+  | S13  | repeat = 1                                  | 74   | repeat        | -                      |
+  | S14  | i++ (for-incr)                              | 64   | i             | i                      |
+  | S15  | details.isEmpty() ? Success : Failure [D4]  | 77   | -             | details                |
+  | S16  | clear(codePoints) (finally)                 | 79   | -             | codePoints             |
+
+Variables tracked: details, password, codePoints, repeat, i
+
+Def-Use pairs (22 total):
+  | #  | Variable   | Def | Use | Type  | Def-clear path                       |
+  | 1  | details    | S2  | S12 | c-use | S2→...→S9(F)→S11(T)→S12             |
+  | 2  | details    | S2  | S15 | p-use | S2→...→S15                           |
+  | 3  | password   | S3  | S4  | c-use | S3→S4                                |
+  | 4  | codePoints | S4  | S5  | c-use | S4→S5                                |
+  | 5  | codePoints | S5  | S8  | c-use | S5→S6→S7→S8                          |
+  | 6  | codePoints | S5  | S9  | c-use | S5→...→S8→S9                         |
+  | 7  | codePoints | S5  | S12 | c-use | S5→...→S11(T)→S12                    |
+  | 8  | codePoints | S5  | S16 | c-use | S5→...→S15→S16                       |
+  | 9  | repeat     | S6  | S10 | c-use | S6→S7→S8→S9(T)→S10                   |
+  | 10 | repeat     | S6  | S11 | p-use | S6→S7→S8→S9(F)→S11                   |
+  | 11 | repeat     | S10 | S10 | c-use | S10→S14→S8→S9(T)→S10 (self-loop)     |
+  | 12 | repeat     | S10 | S11 | p-use | S10→S14→S8→S9(F)→S11                 |
+  | 13 | repeat     | S10 | S12 | c-use | S10→S14→S8→S9(F)→S11(T)→S12         |
+  | 14 | repeat     | S13 | S10 | c-use | S13→S14→S8→S9(T)→S10                 |
+  | 15 | repeat     | S13 | S11 | p-use | S13→S14→S8→S9(F)→S11                 |
+  | 16 | i          | S7  | S8  | p-use | S7→S8                                |
+  | 17 | i          | S7  | S9  | c-use | S7→S8→S9                             |
+  | 18 | i          | S14 | S8  | p-use | S14→S8                               |
+  | 19 | i          | S14 | S9  | c-use | S14→S8→S9                            |
+  | 20 | i          | S14 | S14 | c-use | S14→S8→...→S14                       |
+  | 21 | i          | S7  | S12 | c-use | S7→S8→S9(F)→S11(T)→S12              |
+  | 22 | i          | S14 | S12 | c-use | S14→S8→S9(F)→S11(T)→S12             |
+
+1. All-Definitions (2 tests — one use per definition)
+  | ID  | Password | maxOcc | Result | Definitions covered                              |
+  | AD1 | abcdef   | 2      | pass   | def(details S2), def(password S3), def(cp S4/S5), def(repeat S6), def(i S7/S14) |
+  | AD2 | aaabcd   | 2      | fail   | def(details S2→S12), def(repeat S10), def(repeat S13) |
+
+2. All-Uses (6 tests — every DU pair exercised)
+  | ID  | Password | maxOcc | Result | DU pairs covered                              |
+  | AU1 | abcdef   | 2      | pass   | DU 2,3,4,5,6,8,10,16,17                      |
+  | AU2 | aabcde   | 2      | pass   | DU 9 (S6→S10), DU 12 (S10→S11:F)             |
+  | AU3 | aaabcd   | 2      | fail   | DU 1,7,13 (S10→S12), DU 15,21                |
+  | AU4 | aaabbb   | 2      | fail   | DU 14 (S13→S10), DU 22                        |
+  | AU5 | ab       | 2      | pass   | DU 16,17 (first iteration, i from S7)         |
+  | AU6 | aaa      | 2      | fail   | DU 11 (S10→S10 self), DU 18,19,20             |
+
+3. All-Def-Uses (6 tests — all def-clear paths)
+  | ID   | Password | maxOcc | Result | Path covered                                   |
+  | ADU1 | abcdef   | 2      | pass   | S9(F)→S11(F)→S13: repeat never exceeds 1      |
+  | ADU2 | aabcde   | 2      | pass   | S9(T)→S10 then S9(F)→S11(F): pair at boundary |
+  | ADU3 | aaabcd   | 2      | fail   | S10→S14→S8→S9(F)→S11(T)→S12                   |
+  | ADU4 | aaabbb   | 2      | fail   | S13→S14→S8→S9(T)→S10: cross-group repeat      |
+  | ADU5 | aabbbc   | 2      | fail   | S13→S10 where 2nd group exceeds                |
+  | ADU6 | aaabb    | 2      | fail   | S13→S14→S8→S9(F)→S11(F): 2nd group ok         |
+
+Run: mvn test "-Dtest=CharacterOccurrencesRuleDataFlowTest" "-Dcheckstyle.skip=true"
+-> 5 variables | 22 DU pairs | 14 JUnit tests (3 batteries) | BUILD SUCCESS
