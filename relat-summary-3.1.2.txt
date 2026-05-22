@@ -1,6 +1,29 @@
 Function: org.passay.rule.UsernameRule#validate
-Code:core/src/main/java/org/passay/rule/UsernameRule.java
+Code: core/src/main/java/org/passay/rule/UsernameRule.java
 JUnit: core/src/test/java/org/passay/rule/UsernameRulePairwiseTest.java
+
+Code under test (UsernameRule.java lines 120-159):
+  @Override
+  public RuleResult validate(final PasswordData passwordData)
+  {
+    PassayUtils.assertNotNullArg(passwordData, "Password data cannot be null");
+    final List<RuleResultDetail> details = new ArrayList<>();
+    if (passwordData.getUsername() != null && !passwordData.getUsername().isEmpty()) {
+      UnicodeString text = UnicodeString.copy(passwordData.getPassword());
+      UnicodeString user = UnicodeString.copy(passwordData.getUsername());
+      try {
+        if (ignoreCase) { text = text.toLowerCase(true); user = user.toLowerCase(true); }
+        if (matchBehavior.match(text, user)) { details.add(...); }
+        if (matchBackwards) {
+          final UnicodeString reverseUser = user.reverse();
+          try {
+            if (matchBehavior.match(text, reverseUser)) { details.add(...); }
+          } finally { reverseUser.clear(); }
+        }
+      } finally { text.clear(); user.clear(); }
+    }
+    return details.isEmpty() ? new SuccessRuleResult() : new FailureRuleResult(details);
+  }
 
 Why UsernameRule
 LengthRule (3.1.1) is mostly one numeric input. Pairwise fits rules with severalconfiguration flags that interact. UsernameRule checks if the password matches the

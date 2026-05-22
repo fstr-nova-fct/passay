@@ -1,6 +1,20 @@
 Function: org.passay.rule.LengthRule#validate
-Code:core/src/main/java/org/passay/rule/LengthRule.java
-JUnit:core/src/test/java/org/passay/rule/LengthRuleBlackBoxTest.java
+Code: core/src/main/java/org/passay/rule/LengthRule.java
+JUnit: core/src/test/java/org/passay/rule/LengthRuleBlackBoxTest.java
+
+Code under test (LengthRule.java lines 91-105):
+  @Override
+  public RuleResult validate(final PasswordData passwordData)
+  {
+    PassayUtils.assertNotNullArg(passwordData, "Password data cannot be null");
+    final int length = passwordData.getPassword().codePointCount();
+    if (length < minimumLength) {
+      return new FailureRuleResult(..., ERROR_CODE_MIN, ...);
+    } else if (length > maximumLength) {
+      return new FailureRuleResult(..., ERROR_CODE_MAX, ...);
+    }
+    return new SuccessRuleResult(createRuleResultMetadata(passwordData));
+  }
 
 Logic (3 branches): length < min → TOO_SHORT | length > max → TOO_LONG | else OK
 Length: codePointCount() (ASCII tests: 1 char = 1 code point)

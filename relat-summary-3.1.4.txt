@@ -3,6 +3,22 @@ Code:  core/src/main/java/org/passay/rule/NumberRangeRule.java
 JUnit: core/src/test/java/org/passay/rule/NumberRangeRuleCategoryPartitionTest.java
 TSL:  core/src/test/resources/NumberRangeRule.tsl
 
+Code under test (NumberRangeRule.java lines 143-161):
+  @Override
+  public RuleResult validate(final PasswordData passwordData)
+  {
+    PassayUtils.assertNotNullArg(passwordData, "Password data cannot be null");
+    final List<RuleResultDetail> details = new ArrayList<>();
+    final UnicodeString text = passwordData.getPassword();
+    for (int i = lowerRange; i < upperRange; i++) {
+      if (matchBehavior.match(text, Integer.toString(i))) {
+        details.add(new RuleResultDetail(..., createRuleResultDetailParameters(i)));
+        if (!reportAllFailures) { break; }
+      }
+    }
+    return details.isEmpty() ? new SuccessRuleResult() : new FailureRuleResult(details);
+  }
+
 Why NumberRangeRule:
 Password must not contain a number in [lower, upper) — here [10, 20)
 Rule also depends on how the number appears (Contains / StartsWith / EndsWith) and whether to report all matches or only the first

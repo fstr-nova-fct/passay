@@ -2,6 +2,33 @@ Function: org.passay.rule.CharacterOccurrencesRule#validate
 Code:  core/src/main/java/org/passay/rule/CharacterOccurrencesRule.java
 JUnit: core/src/test/java/org/passay/rule/CharacterOccurrencesRuleDataFlowTest.java
 
+Code under test (CharacterOccurrencesRule.java lines 55-81):
+  @Override
+  public RuleResult validate(final PasswordData passwordData)
+  {
+    PassayUtils.assertNotNullArg(passwordData, "Password data cannot be null");
+    final List<RuleResultDetail> details = new ArrayList<>();
+    final UnicodeString password = passwordData.getPassword();
+    final int[] codePoints = IntStream.concat(
+      password.codePoints(), IntStream.of(Integer.MAX_VALUE)).toArray();
+    Arrays.sort(codePoints);
+    try {
+      int repeat = 1;
+      for (int i = 1; i < codePoints.length; i++) {           // D1 loop
+        if (codePoints[i] == codePoints[i - 1]) {             // D2
+          repeat++;                                           // S10
+        } else {
+          if (repeat > maxOccurrences) {                      // D3
+            details.add(new RuleResultDetail(ERROR_CODE, ...));
+          }
+          repeat = 1;                                         // S13
+        }
+      }
+      return details.isEmpty() ? new SuccessRuleResult()      // D4
+                               : new FailureRuleResult(details);
+    } finally { PassayUtils.clear(codePoints); }
+  }
+
 Why CharacterOccurrencesRule:
 Checks if any character appears more than maxOccurrences times in the password.
 The validate() method sorts the characters, then iterates counting consecutive

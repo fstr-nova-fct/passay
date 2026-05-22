@@ -2,6 +2,37 @@ Function: org.passay.rule.RepeatCharactersRule#validate
 Code:  core/src/main/java/org/passay/rule/RepeatCharactersRule.java
 JUnit: core/src/test/java/org/passay/rule/RepeatCharactersRuleControlFlowTest.java
 
+Code under test (RepeatCharactersRule.java lines 83-119):
+  @Override
+  public RuleResult validate(final PasswordData passwordData)
+  {
+    PassayUtils.assertNotNullArg(passwordData, "Password data cannot be null");
+    final List<CharSequence> matches = new ArrayList<>();
+    final int[] codePoints = IntStream.concat(
+      passwordData.getPassword().codePoints(), IntStream.of('\uffff')).toArray();
+    final UnicodeString password = new UnicodeString(codePoints);
+    PassayUtils.clear(codePoints);
+    try {
+      final int max = password.codePointCount() - 1;
+      int count = 0, repeat = 1, prev = -1, i = 0;
+      while (i <= max) {                              // D1
+        final int curr = password.codePointAt(i);
+        if (curr == prev) {                           // D2
+          repeat++;
+        } else {
+          if (repeat >= sequenceLength) {             // D3
+            matches.add(password.substring(i - repeat, i));
+            count++;
+          }
+          repeat = 1;
+        }
+        prev = curr; i++;
+      }
+      if (count >= sequenceCount) { return new FailureRuleResult(...); }  // D4
+      return new SuccessRuleResult();
+    } finally { password.clear(); }
+  }
+
 Why RepeatCharactersRule:
 Checks if a password contains too many sequences of repeating characters.
 The validate() method has a while loop with nested if/else branches — good structure
@@ -70,4 +101,4 @@ Decisions:
   | P5   | aab      | 2      | 1      | flips D4: count >= seqCount        | fail   |
 
 Run: mvn test "-Dtest=RepeatCharactersRuleControlFlowTest" "-Dcheckstyle.skip=true"
--> 4 decisions | V(G)=5 | 12 JUnit tests (5 batteries) | BUILD SUCCESS
+-> 4 decisions | V(G)=5 | 14 JUnit tests (5 batteries) | BUILD SUCCESS
